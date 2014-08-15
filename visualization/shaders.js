@@ -197,6 +197,31 @@ X.shaders = function() {
   t2 += 'varying vec3 fVertexNormal;\n';
   t2 += 'varying vec3 fTransformedVertexNormal;\n';
   t2 += '\n';
+  // HSV to RGB function
+  t2 += 'vec4 HSV2RGB(vec4 hsva) {\n';
+  t2 += '    vec4 rgba;\n';
+  t2 += '    float h = hsva.x, s = hsva.y, v = hsva.z, m, n, f;\n';
+  t2 += '    float i;\n';
+  t2 += '    if( h == 0.0 )\n';
+  t2 += '        rgba = vec4(v, v, v, hsva.a);\n';
+  t2 += '    else {\n';
+  t2 += '        i = floor(h);\n';
+  t2 += '        f = h - i;\n';
+  t2 += '        float t = i / 2.0;\n';
+  t2 += '        if( t - floor( t ) <  0.1 )\n';
+  t2 += '        f = 1.0 - f;\n'; // if i is even'
+  t2 += '        m = v * (1.0 - s);\n';
+  t2 += '        n = v * (1.0 - s * f);\n';
+  t2 += '        if(i == 0.0 )       rgba = vec4(v, n, m, hsva.a);\n';
+  t2 += '        else if( i == 1.0 ) rgba = vec4(n, v, m, hsva.a);\n';
+  t2 += '        else if( i == 2.0 ) rgba = vec4(m, v, n, hsva.a);\n';
+  t2 += '        else if( i == 3.0 ) rgba = vec4(m, n, v, hsva.a);\n';
+  t2 += '        else if( i == 4.0 ) rgba = vec4(n, m, v, hsva.a);\n';
+  t2 += '        else                rgba = vec4(v, m, n, hsva.a);\n';
+  t2 += '    }\n';
+  t2 += '    return rgba;\n';
+  t2 += '}\n';
+  // HSV to RGB function end
   t2 += 'void main(void) {\n';
   t2 += ' if (fDiscardNow > 0.0) {\n';
   t2 += '   discard;\n'; // really discard now
@@ -250,7 +275,12 @@ X.shaders = function() {
   t2 += '       discard;\n';
   t2 += '     };\n';
   t2 += '   };\n';
-  t2 += '   gl_FragColor = textureSum;\n';
+  // interpolate color in HSV space
+  t2 += '   const vec4 hsv1 = vec4(0, 1, 1, 1);\n'; //Rød, 0 grader
+  t2 += '   const vec4 hsv2 = vec4(6.28, 1, 1, 1);\n'; //rød, 360 grader
+  t2 += '   vec4 hsv = (1.0-textureSum.r) * hsv1 + textureSum.r * hsv2;\n'; //Lineærinterpolasjon i HSV-fargerommet, t in [0, 1)
+  t2 += '   gl_FragColor = HSV2RGB(hsv);\n';
+  //t2 += '   gl_FragColor = textureSum;\n';
   t2 += '   gl_FragColor.a = objectOpacity;\n';
   t2 += ' } else {\n';
   // configure advanced lighting
